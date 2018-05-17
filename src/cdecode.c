@@ -22,6 +22,16 @@ void base64_init_decodestate(base64_decodestate* state_in)
 	state_in->plainchar = 0;
 }
 
+int is_next_codechar_anequal(const char* code_in_next, const int length_in_remaining)
+{
+	// Do we have any characters remaining after this one?
+	if (length_in_remaining) {
+		if (*code_in_next == '=')
+			return (1); // We have an equal
+	}
+	return (0); // No more charcters available
+}
+
 int base64_decode_block(const char* code_in, const int length_in, char* plaintext_out, base64_decodestate* state_in)
 {
 	const char* codechar = code_in;
@@ -56,7 +66,8 @@ int base64_decode_block(const char* code_in, const int length_in, char* plaintex
 				fragment = (char)base64_decode_value(*codechar++);
 			} while (fragment < 0);
 			*plainchar++ |= (fragment & 0x030) >> 4;
-			*plainchar    = (fragment & 0x00f) << 4;
+			if (!is_next_codechar_anequal(codechar, length_in - (codechar - code_in)))
+				*plainchar    = (fragment & 0x00f) << 4;
 	case step_c:
 			do {
 				if (codechar == code_in+length_in)
@@ -68,7 +79,8 @@ int base64_decode_block(const char* code_in, const int length_in, char* plaintex
 				fragment = (char)base64_decode_value(*codechar++);
 			} while (fragment < 0);
 			*plainchar++ |= (fragment & 0x03c) >> 2;
-			*plainchar    = (fragment & 0x003) << 6;
+			if (!is_next_codechar_anequal(codechar, length_in - (codechar - code_in)))
+				*plainchar    = (fragment & 0x003) << 6;
 	case step_d:
 			do {
 				if (codechar == code_in+length_in)
